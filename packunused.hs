@@ -7,7 +7,6 @@ import           Data.IORef
 import           Data.List
 import           Data.List.Split (splitOn)
 import           Data.Maybe
-import           Data.Monoid
 import qualified Data.Version as V(showVersion)
 import           Distribution.InstalledPackageInfo (exposedName, exposedModules, InstalledPackageInfo)
 import           Distribution.ModuleName (ModuleName)
@@ -24,7 +23,7 @@ import           Distribution.Text (display)
 import           Distribution.Types.ForeignLib(ForeignLib(..))
 import           Distribution.Types.MungedPackageId(MungedPackageId(..))
 import           Distribution.Types.UnqualComponentName(unUnqualComponentName)
-import           Distribution.Version(showVersion, mkVersion)
+import           Distribution.Version(mkVersion)
 import qualified Language.Haskell.Exts as H
 import           Options.Applicative
 import           Options.Applicative.Help.Pretty (Doc)
@@ -88,7 +87,7 @@ usageFooter = mconcat
 
 usageHeader :: String
 usageHeader = "packunused " ++ V.showVersion version ++
-             " (using Cabal "++ showVersion cabalVersion ++ ")"
+             " (using Cabal "++ show cabalVersion ++ ")"
 
 getInstalledPackageInfos :: [(UnitId, MungedPackageId)] -> PackageIndex InstalledPackageInfo -> [InstalledPackageInfo]
 getInstalledPackageInfos pkgs ipkgs =
@@ -163,11 +162,11 @@ main = do
     putHeading "detected package components"
 
     when (isJust $ PD.library pkg) $
-        putStrLn $ " - library" ++ [ '*' | CLibName `notElem` cbo ]
+        putStrLn $ " - library" ++ [ '*' | CLibName LMainLibName `notElem` cbo ]
 
-    unless (null $ PD.subLibraries pkg) $
-        putStrLn $ " - sub lib(s): " ++ unwords [ maybe "Nothing" unUnqualComponentName mayN ++ [ '*' | maybe True (flip notElem cbo . CSubLibName) mayN ]
-                                                   | PD.Library { libName = mayN } <- PD.subLibraries pkg ]
+    -- unless (null $ PD.subLibraries pkg) $
+    --     putStrLn $ " - sub lib(s): " ++ unwords [ show mayN ++ [ '*' | maybe True (flip notElem cbo . CSubLibName) mayN ]
+                                                   -- | PD.Library { libName = mayN } <- PD.subLibraries pkg ]
     unless (null $ PD.foreignLibs pkg) $
         putStrLn $ " - foreign lib(s): " ++ unwords [ unUnqualComponentName n ++ [ '*' | CFLibName n `notElem` cbo ]
                                                    | ForeignLib { foreignLibName = n } <- PD.foreignLibs pkg ]
@@ -188,7 +187,7 @@ main = do
     ----------------------------------------------------------------------------
 
     -- GHC prior to 7.8.1 emitted .imports file in $PWD and therefore would risk overwriting files
-    let multiMainIssue = not importsInOutDir && length (filter (/= CLibName) cbo) > 1
+    let multiMainIssue = not importsInOutDir && length (filter (/= CLibName LMainLibName) cbo) > 1
 
 
     ok <- newIORef True
